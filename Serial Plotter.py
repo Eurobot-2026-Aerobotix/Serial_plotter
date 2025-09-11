@@ -5,12 +5,20 @@ import numpy as np
 import struct
 
 ser = serial.Serial('COM10', 115200)
-win = pg.GraphicsLayoutWidget(show=True, title="Real-Time Plot", size=(800, 600))
-plot = win.addPlot(title="waka waka ee ee")
+win = pg.GraphicsLayoutWidget(show=True, title="Real-Time Plot", size=(1850, 1000))
+win.setGeometry(0, 29, 1800, 840)
+#win.showFullScreen()
+plot = win.addPlot(title="labyedh l AA wel a5dher BB")
 curveR = plot.plot(pen='w')
-plot.setYRange(-10000, 10000)
+curveL = plot.plot(pen='g')
+curveT = plot.plot(pen='r')
+curveJ = plot.plot(pen='y')
+plot.setYRange(-1000, 1000)
 
 dataR = np.zeros(1000)
+dataL = np.zeros(1000)
+dataT = np.zeros(1000)
+dataJ = np.zeros(1000)
 '''
     takes float values as 4 bytes preceded by a header (0xAA)
 
@@ -24,14 +32,31 @@ dataR = np.zeros(1000)
 '''
 def update():
     global dataR
-    while ser.in_waiting >= 4:
-        while ser.read(1) != b'\xAA':
-            ser.read(1)    
+    global dataL
+    global dataT
+    global dataJ
+    while ser.in_waiting >= 5:
+        x = ser.read(1)
+        while not x in {b'\xAA', b'\xAB',  b'\xAC', b'\xAD'}:
+            x = ser.read(1)
         raw = ser.read(4)
         value = struct.unpack('<f', raw)[0]
-        dataR = np.roll(dataR, -1)
-        dataR[-1] = value
+        if x == b'\xAA':
+            dataR = np.roll(dataR, -1)
+            dataR[-1] = value
+        elif x == b'\xAB':
+            dataL = np.roll(dataL, -1)
+            dataL[-1] = value
+        elif x == b'\xAC':
+            dataT = np.roll(dataT, -1)
+            dataT[-1] = value
+        else:
+            dataJ = np.roll(dataJ, -1)
+            dataJ[-1] = value
     curveR.setData(dataR)
+    curveL.setData(dataL)
+    curveT.setData(dataT)
+    curveJ.setData(dataJ)
 
 timer = QtCore.QTimer()
 timer.timeout.connect(update)
